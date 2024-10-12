@@ -1,4 +1,4 @@
-use common::CollectionIdentifier;
+use common::{Collection, CollectionIdentifier};
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::*;
@@ -27,17 +27,116 @@ fn App() -> impl IntoView {
 
 #[component]
 fn Collection() -> impl IntoView {
-    let cx = use_route();
-    let params = cx.params().get_untracked();
-    let index = params
-        .get("id")
-        .expect("id must be passed in as param from router");
+    let (collection, set_collection) = create_signal::<Option<Collection>>(None);
+    create_effect(move |_| {
+        spawn_local(async move {
+            let index = 1; // FIXME:
+            match get_collection(index).await {
+                Ok(result) => set_collection(Some(result)),
+                Err(message) => {
+                    console_log(&format!("failed to get collection due to: {:?}", message))
+                }
+            };
+        });
+    });
+
     view! {
         <div>
-            <h1>{format!("Collection {}", index)}</h1>
             <a href="/">Home</a>
+            {
+                move || {
+                collection.with(|col| {
+                 match col {
+                        // TODO: reneder collection, name files
+                    Some(c) => view!{<div> <CollectionWrapper collection=CollectionData::from(c) /></div>},
+                    None => view!{<div> <p> "loading" </p></div>}
+                }
+            })
+                }
+            }
         </div>
     }
+}
+
+#[derive(Debug, Clone)]
+struct CollectionData {
+    name: String,
+    files: Vec<FileData>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct FileData {
+    index: usize,
+}
+
+impl From<&common::File> for FileData {
+    fn from(file: &common::File) -> Self {
+        match file.kind {
+            common::FileKind::Image => FileData { index: file.index },
+            _ => panic!("unsupported file kind"),
+        }
+    }
+}
+
+impl From<&Collection> for CollectionData {
+    fn from(collection: &Collection) -> Self {
+        CollectionData {
+            name: collection.name.clone(),
+            files: collection.files.iter().map(FileData::from).collect(),
+        }
+    }
+}
+
+#[component]
+fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
+    if collection.files.is_empty() {
+        return view! {
+            <div>
+                <h1>{collection.name}</h1>
+                <p> "No files in collection" </p>
+            </div>
+        };
+    }
+    let (current_file_index, set_current_file_index) = create_signal(0);
+    let last_index = collection.files.len() - 1;
+    view! {
+        <div>
+            <h1>{collection.name}</h1>
+            <div>
+                <button on:click=move |_| set_current_file_index(0)> "First" </button>
+                <button on:click=move |_| set_current_file_index(current_file_index.get() - 1)> "Previous" </button>
+                <button on:click=move |_| set_current_file_index(current_file_index.get() + 1)> "Next" </button>
+                <button on:click=move |_| set_current_file_index(last_index)> "Last" </button>
+            </div>
+            {
+                move || {
+                    let file = &collection.files[current_file_index.get()];
+                    match file {
+                        FileData { index } => view! { <Image file=FileData { index: *index } /> }
+                    }
+                }
+            }
+        </div>
+    }
+}
+
+#[component]
+fn Image(file: FileData) -> impl IntoView {
+    view! {
+        <div>
+            <img src=format!("{}/file/{}", BASE_URL, file.index) />
+        </div>
+    }
+}
+
+async fn get_collection(index: usize) -> Result<common::Collection, String> {
+    let resp = reqwest::get(format!("{}/collection/{}", BASE_URL, index))
+        .await
+        .map_err(|err| format!("failed to get response due to {:?}", err))?
+        .json::<common::Collection>()
+        .await
+        .map_err(|err| format!("failed to databind message due to {:?}", err))?;
+    Ok(resp)
 }
 
 #[component]

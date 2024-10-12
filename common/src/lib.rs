@@ -8,6 +8,7 @@ pub struct TestResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum FileKind {
     Image,
+    Video,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,6 +20,7 @@ pub struct File {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Collection {
+    pub name: String,
     pub files: Vec<File>,
 }
 

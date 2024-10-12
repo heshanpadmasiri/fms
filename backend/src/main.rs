@@ -17,6 +17,7 @@ impl Context {
     async fn get_collection(&self, index: u32) -> Option<common::Collection> {
         if index == 1 {
             Some(common::Collection {
+                name: "test collection".to_owned(),
                 files: vec![common::File {
                     name: "test file".to_owned(),
                     index: 1,
