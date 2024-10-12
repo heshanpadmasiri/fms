@@ -8,3 +8,4 @@ console_error_panic_hook = "0.1.7"
 leptos = { version = "0.6.15", features = ["csr", "nightly"] }
 reqwest = {version="0.12.8", features = ["json"] }
 common = { path = "../common" }
+leptos_router = { version = "0.6.15", features = ["csr"] }

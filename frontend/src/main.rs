@@ -2,6 +2,7 @@ use common::CollectionIdentifier;
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::*;
+use leptos_router::*;
 
 static BASE_URL: &str = "http://127.0.0.1:9090";
 
@@ -10,10 +11,44 @@ fn collections_url() -> String {
 }
 
 #[component]
-fn Collection(name: String, index: usize) -> impl IntoView {
+fn App() -> impl IntoView {
+    view! {
+    <Router>
+        <main>
+            <Routes>
+                <Route path="/" view=Home/>
+                <Route path="/collection/:id" view=Collection/>
+                <Route path="/*any" view=|| view! { <h1>"Not Found"</h1> }/>
+            </Routes>
+        </main>
+    </Router>
+    }
+}
+
+#[component]
+fn Collection() -> impl IntoView {
+    let cx = use_route();
+    let params = cx.params().get_untracked();
+    let index = params
+        .get("id")
+        .expect("id must be passed in as param from router");
     view! {
         <div>
-            <h2>{format!("\u{1F4C1} {name}")}</h2>
+            <h1>{format!("Collection {}", index)}</h1>
+            <a href="/">Home</a>
+        </div>
+    }
+}
+
+#[component]
+fn CollectionCard(name: String, index: usize) -> impl IntoView {
+    view! {
+        <div>
+            <h2>
+            <a href=format!("/collection/{index}")>
+                {format!("\u{1F4C1} {name}")}
+            </a>
+        </h2>
         </div>
     }
 }
@@ -38,7 +73,7 @@ fn Home() -> impl IntoView {
             move || {
                 collections.get().iter().map(|collection| {
                     // TODO: pass name name index
-                    view! { <Collection name=collection.name.clone() index=collection.index/> }
+                    view! { <CollectionCard name=collection.name.clone() index=collection.index/> }
                 }).collect::<Vec<_>>()
             }
         }
@@ -83,5 +118,5 @@ pub async fn get_test_str() -> Result<String, String> {
 }
 
 fn main() {
-    mount_to_body(|| view! { <Home/>})
+    mount_to_body(|| view! { <App/>})
 }
