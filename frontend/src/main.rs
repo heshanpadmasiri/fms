@@ -25,21 +25,27 @@ fn App() -> impl IntoView {
     }
 }
 
+#[derive(Params, PartialEq)]
+struct CollectionParams {
+    id: Option<usize>,
+}
+
 #[component]
 fn Collection() -> impl IntoView {
     let (collection, set_collection) = create_signal::<Option<Collection>>(None);
-    create_effect(move |_| {
-        spawn_local(async move {
-            let index = 1; // FIXME:
+    let params = use_params_map();
+    create_resource(
+        move || params.with(|p| p.get("id").cloned().unwrap_or_default()),
+        move |id| async move {
+            let index = id.parse::<usize>().unwrap();
             match get_collection(index).await {
                 Ok(result) => set_collection(Some(result)),
                 Err(message) => {
                     console_log(&format!("failed to get collection due to: {:?}", message))
                 }
             };
-        });
-    });
-
+        },
+    );
     view! {
         <div>
             <a href="/">Home</a>
@@ -108,9 +114,7 @@ fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
                         <div>
                         <p> {format!("File {} of {}", current_file_index.get() + 1, last_index + 1)} </p>
                         </div>
-
                     }
-
                 }
             }
             <div class="flex justify-evenly space-x-4">
