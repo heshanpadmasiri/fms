@@ -16,13 +16,16 @@ impl Context {
 
     async fn get_collection(&self, index: u32) -> Option<common::Collection> {
         if index == 1 {
+            let files: Vec<common::File> = (1..4)
+                .map(|i| common::File {
+                    name: format!("test file {}", i),
+                    index: i,
+                    kind: common::FileKind::Image,
+                })
+                .collect();
             Some(common::Collection {
                 name: "test collection".to_owned(),
-                files: vec![common::File {
-                    name: "test file".to_owned(),
-                    index: 1,
-                    kind: common::FileKind::Image,
-                }],
+                files,
             })
         } else {
             None
@@ -30,8 +33,8 @@ impl Context {
     }
 
     async fn get_file_path(&self, index: u32) -> Option<String> {
-        if index == 1 {
-            Some(format!("./testdata/a.jpg"))
+        if index < 4 {
+            Some(format!("./testdata/{index}.jpg"))
         } else {
             None
         }
