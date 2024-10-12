@@ -102,11 +102,11 @@ fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
     view! {
         <div>
             <h1>{collection.name}</h1>
-            <div>
-                <button on:click=move |_| set_current_file_index(0)> "First" </button>
-                <button on:click=move |_| set_current_file_index(current_file_index.get() - 1)> "Previous" </button>
-                <button on:click=move |_| set_current_file_index(current_file_index.get() + 1)> "Next" </button>
-                <button on:click=move |_| set_current_file_index(last_index)> "Last" </button>
+            <div class="flex justify-evenly space-x-4">
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(0)> "First" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(current_file_index.get() - 1)> "Previous" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(current_file_index.get() + 1)> "Next" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(last_index)> "Last" </button>
             </div>
             {
                 move || {
@@ -123,8 +123,8 @@ fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
 #[component]
 fn Image(file: FileData) -> impl IntoView {
     view! {
-        <div>
-            <img src=format!("{}/file/{}", BASE_URL, file.index) />
+        <div class="flex items-center justify-center h-screen">
+            <img class="max-w-full max-h-full object-contain" src=format!("{}/file/{}", BASE_URL, file.index) />
         </div>
     }
 }
