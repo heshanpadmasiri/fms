@@ -1,16 +1,10 @@
 use actix_cors::Cors;
 use actix_web::{get, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-struct TestResponse {
-    message: String,
-}
 
 #[get("/")]
 async fn test() -> impl Responder {
     println!("test called");
-    HttpResponse::Ok().json(TestResponse {
+    HttpResponse::Ok().json(common::TestResponse {
         message: "hello world from test".to_owned(),
     })
 }

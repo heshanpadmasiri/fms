@@ -1,7 +1,6 @@
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::*;
-use std::collections::HashMap;
 
 #[component]
 pub fn Test() -> impl IntoView {
@@ -22,11 +21,11 @@ pub async fn get_test_str() -> Result<String, String> {
     let resp = reqwest::get("http://127.0.0.1:9090")
         .await
         .map_err(|err| format!("failed to get response due to {:?}", err))?
-        .json::<HashMap<String, String>>()
+        .json::<common::TestResponse>()
         .await
         .map_err(|err| format!("failed to databind message due to {:?}", err))?;
     console_log(&format!("{:?}", &resp));
-    Ok(resp["message"].clone())
+    Ok(resp.message)
 }
 
 fn main() {
