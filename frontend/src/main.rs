@@ -101,22 +101,33 @@ fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
     let last_index = collection.files.len() - 1;
     view! {
         <div>
-            <h1>{collection.name}</h1>
-            <div class="flex justify-evenly space-x-4">
-                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(0)> "First" </button>
-                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(current_file_index.get() - 1)> "Previous" </button>
-                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(current_file_index.get() + 1)> "Next" </button>
-                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(last_index)> "Last" </button>
-            </div>
+        <h1>{collection.name}</h1>
             {
                 move || {
-                    let file = &collection.files[current_file_index.get()];
-                    match file {
-                        FileData { index } => view! { <Image file=FileData { index: *index } /> }
+                    view! {
+                        <div>
+                        <p> {format!("File {} of {}", current_file_index.get() + 1, last_index + 1)} </p>
+                        </div>
+
                     }
+
                 }
             }
-        </div>
+            <div class="flex justify-evenly space-x-4">
+            <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(0)> "First" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(std::cmp::max(0, current_file_index.get() - 1))> "Previous" </button>
+                    <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(std::cmp::min(last_index, current_file_index.get() + 1))> "Next" </button>
+                        <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(last_index)> "Last" </button>
+                        </div>
+                        {
+                            move || {
+                                let file = &collection.files[current_file_index.get()];
+                                match file {
+                                    FileData { index } => view! { <Image file=FileData { index: *index } /> }
+                                }
+                            }
+                        }
+                        </div>
     }
 }
 
