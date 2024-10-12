@@ -13,7 +13,7 @@ pub enum FileKind {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct File {
     pub name: String,
-    pub index: u32,
+    pub index: usize,
     pub kind: FileKind,
 }
 
@@ -22,8 +22,8 @@ pub struct Collection {
     pub files: Vec<File>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CollectionIdentifier {
     pub name: String,
-    pub index: u32,
+    pub index: usize,
 }
