@@ -27,6 +27,7 @@ fn create_context_at(path: &Path) -> Result<Context, String> {
             collections_vec.push(c);
             file_paths.extend(p);
         } else {
+            // TODO: factor this and corresponding code in create_collection out
             let index = file_paths.len();
             let f = create_file(&path, index)?;
             if !is_supported(&f) {
@@ -86,6 +87,7 @@ fn create_collection(
 fn is_supported(f: &common::File) -> bool {
     match f.kind {
         common::FileKind::Image => true,
+        common::FileKind::Video => true,
         _ => false,
     }
 }
@@ -101,6 +103,8 @@ fn create_file(path: &Path, index: usize) -> Result<common::File, String> {
         Some(ext) => {
             if ext == "jpg" || ext == "jpeg" {
                 common::FileKind::Image
+            } else if ext == "mp4" {
+                common::FileKind::Video
             } else {
                 common::FileKind::Other
             }

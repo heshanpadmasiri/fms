@@ -53,7 +53,6 @@ fn Collection() -> impl IntoView {
                 move || {
                 collection.with(|col| {
                  match col {
-                        // TODO: reneder collection, name files
                     Some(c) => view!{<div> <CollectionWrapper collection=CollectionData::from(c) /></div>},
                     None => view!{<div> <p> "loading" </p></div>}
                 }
@@ -71,15 +70,29 @@ struct CollectionData {
 }
 
 #[derive(Debug, Clone, Copy)]
+enum Kind {
+    Image,
+    Video,
+}
+
+#[derive(Debug, Clone, Copy)]
 struct FileData {
     index: usize,
+    kind: Kind,
 }
 
 impl From<&common::File> for FileData {
     fn from(file: &common::File) -> Self {
         match file.kind {
-            common::FileKind::Image => FileData { index: file.index },
-            _ => panic!("unsupported file kind"),
+            common::FileKind::Image => FileData {
+                index: file.index,
+                kind: Kind::Image,
+            },
+            common::FileKind::Video => FileData {
+                index: file.index,
+                kind: Kind::Video,
+            },
+            _ => panic!("unsupported file type"),
         }
     }
 }
@@ -105,6 +118,16 @@ fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
     }
     let (current_file_index, set_current_file_index) = create_signal(0);
     let last_index = collection.files.len() - 1;
+    let next_index_loop = move || {
+        let current_index = current_file_index.get();
+        if current_index == last_index {
+            0
+        } else {
+            current_index + 1
+        }
+    };
+    let next_index = move || std::cmp::min(last_index, current_file_index.get() + 1);
+    let prev_index = move || std::cmp::max(0, current_file_index.get() - 1);
     view! {
         <div>
         <h1>{collection.name}</h1>
@@ -118,28 +141,41 @@ fn CollectionWrapper(collection: CollectionData) -> impl IntoView {
                 }
             }
             <div class="flex justify-evenly space-x-4">
-            <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(0)> "First" </button>
-                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(std::cmp::max(0, current_file_index.get() - 1))> "Previous" </button>
-                    <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(std::cmp::min(last_index, current_file_index.get() + 1))> "Next" </button>
-                        <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(last_index)> "Last" </button>
-                        </div>
-                        {
-                            move || {
-                                let file = &collection.files[current_file_index.get()];
-                                match file {
-                                    FileData { index } => view! { <Image file=FileData { index: *index } /> }
-                                }
-                            }
-                        }
-                        </div>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(0)> "First" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(prev_index())> "Previous" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(next_index())> "Next" </button>
+                <button class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600" on:click=move |_| set_current_file_index(last_index)> "Last" </button>
+            </div>
+            {
+                move || {
+                    let f = &collection.files[current_file_index.get()];
+                    match f.kind {
+                        Kind::Image => view! { <div on:click=move |_| set_current_file_index(next_index_loop())> <Image  index=f.index /> </div> },
+                        Kind::Video => view! { <div> <Video index=f.index  /> </div>}
+
+                    }
+                }
+            }
+        </div>
     }
 }
 
 #[component]
-fn Image(file: FileData) -> impl IntoView {
+fn Image(index: usize) -> impl IntoView {
     view! {
         <div class="flex items-center justify-center h-screen">
-            <img class="max-w-full max-h-full object-contain" src=format!("{}/file/{}", BASE_URL, file.index) />
+            <img class="max-w-full max-h-full object-contain" src=format!("{}/file/{}", BASE_URL, index) />
+        </div>
+    }
+}
+
+#[component]
+fn Video(index: usize) -> impl IntoView {
+    view! {
+        <div class="flex items-center justify-center h-screen">
+            <video class="max-w-full max-h-full object-contain" controls autoplay>
+                <source src=format!("{}/file/{}", BASE_URL, index) type="video/mp4" />
+            </video>
         </div>
     }
 }

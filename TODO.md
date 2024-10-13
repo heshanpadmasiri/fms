@@ -1,6 +1,6 @@
 # Features
 + [ ] Make is possible to configure base path with a config file
-+ [ ] Support for videos
++ [x] Support for videos
     + [ ] Generating video thumbnails
 + [ ] Slide show
 + [ ] In the preview show the few of the other images as well
