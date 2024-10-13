@@ -1,4 +1,8 @@
-use std::{fs, path::Path, usize};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    usize,
+};
 
 use actix_cors::Cors;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
@@ -99,7 +103,12 @@ fn create_file(path: &Path, index: usize) -> Result<common::File, String> {
         .to_str()
         .ok_or(String::from("failed to convert file name to string"))?
         .to_owned();
-    let kind: common::FileKind = match path.extension() {
+    let kind = file_kind(path);
+    Ok(common::File { name, index, kind })
+}
+
+fn file_kind(path: &Path) -> common::FileKind {
+    match path.extension() {
         Some(ext) => {
             if ext == "jpg" || ext == "jpeg" {
                 common::FileKind::Image
@@ -110,8 +119,7 @@ fn create_file(path: &Path, index: usize) -> Result<common::File, String> {
             }
         }
         None => common::FileKind::Other,
-    };
-    Ok(common::File { name, index, kind })
+    }
 }
 
 impl Context {
@@ -165,7 +173,6 @@ async fn collection(index: web::Path<usize>, cx: web::Data<Context>) -> impl Res
 
 #[get("/file/{index}")]
 async fn file(index: web::Path<usize>, cx: web::Data<Context>) -> impl Responder {
-    // FIXME: this should return the file not URL
     let cx = cx.get_ref();
     let index = index.into_inner();
     dbg!(index);
@@ -177,9 +184,20 @@ async fn file(index: web::Path<usize>, cx: web::Data<Context>) -> impl Responder
 }
 
 fn get_file_response(path: &str) -> HttpResponse {
-    match fs::read(path) {
-        Ok(data) => HttpResponse::Ok().content_type("image/jpeg").body(data),
-        Err(_) => HttpResponse::InternalServerError().body("failed to get image data"),
+    let path: PathBuf = PathBuf::from(path);
+    match fs::read(&path) {
+        Ok(data) => HttpResponse::Ok()
+            .content_type(content_type(file_kind(&path)))
+            .body(data),
+        Err(_) => HttpResponse::InternalServerError().body("failed to get file data"),
+    }
+}
+
+fn content_type(kind: common::FileKind) -> &'static str {
+    match kind {
+        common::FileKind::Image => "image/jpeg",
+        common::FileKind::Video => "video/mp4",
+        _ => "application/octet-stream",
     }
 }
 
