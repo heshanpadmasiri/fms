@@ -43,7 +43,6 @@ fn create_context_at(path: &Path) -> Result<Context, String> {
                     .ok_or(String::from("failed to convert path to string"))?
                     .to_owned(),
             );
-            dbg!(&file_paths[index]);
         }
     }
     if !top_level_collection.files.is_empty() {
@@ -144,7 +143,6 @@ impl Context {
 
     async fn get_file_path(&self, index: usize) -> Option<String> {
         if index < self.file_paths.len() {
-            dbg!(&self.file_paths);
             Some(self.file_paths[index].clone())
         } else {
             None
@@ -164,7 +162,6 @@ async fn collection(index: web::Path<usize>, cx: web::Data<Context>) -> impl Res
     let cx = cx.get_ref();
     let index = index.into_inner();
     if let Some(collection) = cx.get_collection(index).await {
-        dbg!(&collection);
         HttpResponse::Ok().json(collection)
     } else {
         HttpResponse::NotFound().finish()
@@ -175,7 +172,6 @@ async fn collection(index: web::Path<usize>, cx: web::Data<Context>) -> impl Res
 async fn file(index: web::Path<usize>, cx: web::Data<Context>) -> impl Responder {
     let cx = cx.get_ref();
     let index = index.into_inner();
-    dbg!(index);
     if let Some(path) = cx.get_file_path(index).await {
         get_file_response(&path)
     } else {
