@@ -15,6 +15,10 @@ struct Context {
 fn create_context_at(path: &Path) -> Result<Context, String> {
     let mut collections_vec = Vec::new();
     let mut file_paths = Vec::new();
+    let mut top_level_collection = common::Collection {
+        name: String::from("Root"),
+        files: Vec::new(),
+    };
     for entry in fs::read_dir(path).map_err(|err| format!("failed to read dir due to {:?}", err))? {
         let entry = entry.unwrap();
         let path = entry.path();
@@ -23,8 +27,22 @@ fn create_context_at(path: &Path) -> Result<Context, String> {
             collections_vec.push(c);
             file_paths.extend(p);
         } else {
-            // TODO: add to top level collection
+            let index = file_paths.len();
+            let f = create_file(&path, index)?;
+            if !is_supported(&f) {
+                continue;
+            }
+            top_level_collection.files.push(f);
+            file_paths.push(
+                path.to_str()
+                    .ok_or(String::from("failed to convert path to string"))?
+                    .to_owned(),
+            );
+            dbg!(&file_paths[index]);
         }
+    }
+    if !top_level_collection.files.is_empty() {
+        collections_vec.push(top_level_collection);
     }
     Ok(Context {
         collections: collections_vec,
@@ -45,22 +63,16 @@ fn create_collection(
             // TODO: Think about how to deal with nested collections
             continue;
         }
-        match path.extension() {
-            Some(ext) => {
-                if ext == "jpg" || ext == "jpeg" {
-                    files.push(create_file(
-                        &path,
-                        next_index + files.len(),
-                        common::FileKind::Image,
-                    )?);
-                    // FIXME: return the error here
-                    file_paths.push(path.to_str().unwrap().to_owned());
-                }
-            }
-            None => {
-                continue;
-            }
+        let f = create_file(&path, next_index + files.len())?;
+        if !is_supported(&f) {
+            continue;
         }
+        files.push(f);
+        file_paths.push(
+            path.to_str()
+                .ok_or(String::from("failed to convert path to string"))?
+                .to_owned(),
+        );
     }
     Ok((
         common::Collection {
@@ -71,9 +83,30 @@ fn create_collection(
     ))
 }
 
-fn create_file(path: &Path, index: usize, kind: common::FileKind) -> Result<common::File, String> {
-    let name = path.file_name().unwrap().to_str().unwrap().to_owned();
-    let kind = common::FileKind::Image; // FIXME: detect file kind
+fn is_supported(f: &common::File) -> bool {
+    match f.kind {
+        common::FileKind::Image => true,
+        _ => false,
+    }
+}
+
+fn create_file(path: &Path, index: usize) -> Result<common::File, String> {
+    let name = path
+        .file_name()
+        .ok_or(String::from("failed to get file name"))?
+        .to_str()
+        .ok_or(String::from("failed to convert file name to string"))?
+        .to_owned();
+    let kind: common::FileKind = match path.extension() {
+        Some(ext) => {
+            if ext == "jpg" || ext == "jpeg" {
+                common::FileKind::Image
+            } else {
+                common::FileKind::Other
+            }
+        }
+        None => common::FileKind::Other,
+    };
     Ok(common::File { name, index, kind })
 }
 
@@ -93,13 +126,13 @@ impl Context {
         if index < self.collections.len() {
             Some(self.collections[index].clone())
         } else {
-            dbg!(index, self.collections.len(), &self.collections);
             None
         }
     }
 
     async fn get_file_path(&self, index: usize) -> Option<String> {
         if index < self.file_paths.len() {
+            dbg!(&self.file_paths);
             Some(self.file_paths[index].clone())
         } else {
             None
@@ -107,19 +140,10 @@ impl Context {
     }
 }
 
-#[get("/")]
-async fn test(_cx: web::Data<Context>) -> impl Responder {
-    println!("test called");
-    HttpResponse::Ok().json(common::TestResponse {
-        message: "hello world from test".to_owned(),
-    })
-}
-
 #[get("/collections")]
 async fn collections(cx: web::Data<Context>) -> impl Responder {
     let cx = cx.get_ref();
     let collections = cx.get_collections().await;
-    dbg!(&collections);
     HttpResponse::Ok().json(collections)
 }
 
@@ -128,6 +152,7 @@ async fn collection(index: web::Path<usize>, cx: web::Data<Context>) -> impl Res
     let cx = cx.get_ref();
     let index = index.into_inner();
     if let Some(collection) = cx.get_collection(index).await {
+        dbg!(&collection);
         HttpResponse::Ok().json(collection)
     } else {
         HttpResponse::NotFound().finish()
@@ -139,6 +164,7 @@ async fn file(index: web::Path<usize>, cx: web::Data<Context>) -> impl Responder
     // FIXME: this should return the file not URL
     let cx = cx.get_ref();
     let index = index.into_inner();
+    dbg!(index);
     if let Some(path) = cx.get_file_path(index).await {
         get_file_response(&path)
     } else {
@@ -167,7 +193,6 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(
                 create_context_at(Path::new(BASE_DIR)).unwrap(),
             ))
-            .service(test)
             .service(collections)
             .service(collection)
             .service(file)

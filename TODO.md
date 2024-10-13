@@ -9,5 +9,5 @@
 
 # Image gallery feature
 + [ ] Clicking on the image should go to next
-+ [ ] Files on the base path must added to their own collection
++ [x] Files on the base path must added to their own collection
 + [ ] Fix some naming issues

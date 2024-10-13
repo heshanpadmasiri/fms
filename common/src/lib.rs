@@ -9,6 +9,7 @@ pub struct TestResponse {
 pub enum FileKind {
     Image,
     Video,
+    Other,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
