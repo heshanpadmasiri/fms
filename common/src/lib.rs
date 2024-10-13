@@ -4,3 +4,29 @@ use serde::{Deserialize, Serialize};
 pub struct TestResponse {
     pub message: String,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum FileKind {
+    Image,
+    Video,
+    Other,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct File {
+    pub name: String,
+    pub index: usize,
+    pub kind: FileKind,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Collection {
+    pub name: String,
+    pub files: Vec<File>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CollectionIdentifier {
+    pub name: String,
+    pub index: usize,
+}
